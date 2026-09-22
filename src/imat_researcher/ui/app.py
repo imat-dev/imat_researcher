@@ -5,7 +5,7 @@ from html import escape
 
 import gradio as gr
 
-from imat_researcher.manager import ResearchManager
+from imat_researcher.manager import ResearchManager, looks_like_a_query
 from imat_researcher.models import ClarifiedAnswer
 from imat_researcher.ui.styles import CSS, EXAMPLES, HEADER_HTML, JS
 
@@ -22,6 +22,8 @@ QUESTION_HTML = """
 </div>
 """
 
+NOTICE_HTML = '<div class="dr-notice">{message}</div>'
+
 
 async def start_clarification(query: str):
     """Phase one: ask the clarifier what it needs to know, and show those questions."""
@@ -29,14 +31,22 @@ async def start_clarification(query: str):
     blank_prompts = [gr.update(visible=False, value="") for _ in range(MAX_QUESTIONS)]
     blank_boxes = [gr.update(visible=False, value="") for _ in range(MAX_QUESTIONS)]
 
-    if not query:
-        yield (
-            "Enter a research question to get started.",
+    def notice(message: str):
+        """Say why we are not proceeding, with the questionnaire left hidden."""
+        return (
+            NOTICE_HTML.format(message=escape(message)),
             gr.update(visible=False),
             *blank_prompts,
             *blank_boxes,
             [],
         )
+
+    if not query:
+        yield notice("Enter a research question to get started.")
+        return
+
+    if not looks_like_a_query(query):
+        yield notice("That does not look like a research question. Try a topic or a question.")
         return
 
     yield (
@@ -48,6 +58,12 @@ async def start_clarification(query: str):
     )
 
     plan = await ResearchManager().clarify(query)
+
+    # Not researchable: leave the panel hidden, so Start research is unreachable.
+    if not plan.is_researchable:
+        yield notice(plan.rejection or "That is not something I can research. Try a topic instead.")
+        return
+
     questions = plan.questions[:MAX_QUESTIONS]
 
     prompts, boxes = [], []
@@ -68,7 +84,9 @@ async def start_clarification(query: str):
             boxes.append(gr.update(visible=False, value=""))
 
     yield (
-        "",
+        "" if questions else NOTICE_HTML.format(
+            message="No clarification needed — go ahead and research it."
+        ),
         gr.update(visible=True),
         *prompts,
         *boxes,

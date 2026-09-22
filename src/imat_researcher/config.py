@@ -40,7 +40,7 @@ def get_settings() -> Settings:
     return Settings(
         model_name=os.getenv("DEFAULT_MODEL_NAME", "gpt-5.4-mini"),
         how_many_searches=int(os.getenv("HOW_MANY_SEARCHES", "5")),
-        how_many_questions=int(os.getenv("HOW_MANY_QUESTIONS", "3")),
+        how_many_questions=int(os.getenv("HOW_MANY_QUESTIONS", "2")),
         use_email=_flag("USE_EMAIL", "true"),
         email_address=os.getenv("EMAIL_ADDRESS"),
         email_smtp_server=os.getenv("EMAIL_SMTP_SERVER"),

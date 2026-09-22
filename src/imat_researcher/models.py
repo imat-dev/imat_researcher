@@ -28,8 +28,24 @@ class ClarifyingQuestion(BaseModel):
 
 
 class ClarificationPlan(BaseModel):
+    # Declared before the questions so the model settles the judgement first.
+    is_researchable: bool = Field(
+        description=(
+            "True if web research could meaningfully address this request. Vague or broad "
+            "requests are still researchable; that is what the questions are for."
+        )
+    )
+    rejection: str = Field(
+        description=(
+            "If is_researchable is false, one short, friendly sentence telling the user why "
+            "and what to try instead. Empty when is_researchable is true."
+        )
+    )
     questions: list[ClarifyingQuestion] = Field(
-        description="The questions to ask before researching, most important first."
+        description=(
+            "The questions to ask before researching, most important first. "
+            "Empty when is_researchable is false."
+        )
     )
 
 

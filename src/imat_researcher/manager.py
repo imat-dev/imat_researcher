@@ -25,6 +25,19 @@ logger = logging.getLogger(__name__)
 
 TRACE_URL = "https://platform.openai.com/traces/trace?trace_id={trace_id}"
 
+# Two characters, so that real acronyms like "AI" are not screened out locally.
+MIN_QUERY_LENGTH = 2
+
+
+def looks_like_a_query(query: str) -> bool:
+    """Cheap local screen, so obvious junk never costs an API call.
+
+    Deliberately permissive: it only rejects what is definitely not a topic. Judging
+    whether a real-looking request is researchable is the clarifier's job.
+    """
+    query = (query or "").strip()
+    return len(query) >= MIN_QUERY_LENGTH and any(char.isalpha() for char in query)
+
 
 def build_brief(query: str, answers: Sequence[ClarifiedAnswer] | None = None) -> str:
     """Fold the user's clarifications into the query the other agents work from."""
@@ -44,17 +57,35 @@ class ResearchManager:
     """Runs the pipeline for one query, streaming human-readable status as it goes."""
 
     async def clarify(self, query: str) -> ClarificationPlan:
-        """Ask what needs pinning down before researching. Called before `run()`."""
+        """Ask what needs pinning down before researching. Called before `run()`.
+
+        Also decides whether the request is researchable at all; when it is not, the
+        caller should not offer to research it.
+        """
+        if not looks_like_a_query(query):
+            return ClarificationPlan(
+                is_researchable=False,
+                rejection="That does not look like a research question. Try a topic or a question.",
+                questions=[],
+            )
+
         with trace("Clarification trace", trace_id=gen_trace_id()):
             result = await Runner.run(build_clarifier_agent(), f"Research request: {query}")
         plan: ClarificationPlan = result.final_output
-        logger.info("Clarifier produced %d question(s)", len(plan.questions))
+        if plan.is_researchable:
+            logger.info("Clarifier produced %d question(s)", len(plan.questions))
+        else:
+            logger.info("Clarifier rejected the request: %s", plan.rejection)
         return plan
 
     async def run(
         self, query: str, answers: Sequence[ClarifiedAnswer] | None = None
     ) -> AsyncIterator[str]:
         """Run the deep research process, yielding status updates then the final report."""
+        if not looks_like_a_query(query):
+            yield "That does not look like a research question. Try a topic or a question."
+            return
+
         brief = build_brief(query, answers)
         trace_id = gen_trace_id()
         with trace("Research trace", trace_id=trace_id):

@@ -51,6 +51,15 @@ src/imat_researcher/
 is a separate call the UI makes *first*; `run()` then takes the answers. Keeping clarification out
 of `run()` is what preserves the streaming contract below — do not fold it in.
 
+**Researchability is gated in two places.** `looks_like_a_query()` is a cheap local screen that
+rejects only definite junk (too short, no letters) so obvious nonsense never costs an API call;
+the clarifier then returns `is_researchable` with a `rejection` sentence for anything that reads
+like a request but cannot be researched. When either says no, the UI leaves the clarification
+panel hidden, which makes the *Start research* button unreachable rather than merely disabled.
+`run()` re-checks locally as well, so bypassing the UI still cannot start a run on junk. The
+clarifier prompt is deliberately permissive: vague and broad requests are researchable, since
+resolving vagueness is the whole point of the questions.
+
 `ResearchManager.run()` is an **async generator**: each `yield` is a status string that Gradio
 streams straight into the output Markdown box, and the final `yield` is the full report. Anything
 added to the pipeline must keep that contract — yield a human-readable status, not a data
@@ -66,7 +75,7 @@ time — importing a module must not construct an agent or read config:
 
 | Module | Factory | Shape |
 | --- | --- | --- |
-| [agents/clarifier.py](src/imat_researcher/agents/clarifier.py) | `build_clarifier_agent` | `output_type=ClarificationPlan` — list of `ClarifyingQuestion(question, why)` |
+| [agents/clarifier.py](src/imat_researcher/agents/clarifier.py) | `build_clarifier_agent` | `output_type=ClarificationPlan` — `is_researchable` + `rejection` + `ClarifyingQuestion(question, why)` list |
 | [agents/planner.py](src/imat_researcher/agents/planner.py) | `build_planner_agent` | `output_type=WebSearchPlan` — list of `WebSearchItem(query, reason)` |
 | [agents/search.py](src/imat_researcher/agents/search.py) | `build_search_agent` | `WebSearchTool()` with `tool_choice="required"`; returns a <300-word summary |
 | [agents/writer.py](src/imat_researcher/agents/writer.py) | `build_writer_agent` | `output_type=ReportData(short_summary, markdown_report, follow_up_questions)` |
@@ -97,8 +106,9 @@ process and changes require a restart. Read config through `get_settings()` — 
 - `OPENAI_API_KEY` — required; used implicitly by the Agents SDK.
 - `DEFAULT_MODEL_NAME` — model for all four agents (default `gpt-5.4-mini`).
 - `HOW_MANY_SEARCHES` — number of searches the planner is told to produce (default 5).
-- `HOW_MANY_QUESTIONS` — clarifying questions to ask (default 3). The UI shows at most
-  `app.MAX_QUESTIONS` (3) of them; raising this past 3 means extra questions are never displayed.
+- `HOW_MANY_QUESTIONS` — clarifying questions to ask (default 2). The UI shows at most
+  `app.MAX_QUESTIONS` (3) of them, so this can be raised to 3 without a code change; past 3 the
+  extra questions are never displayed.
 - `USE_EMAIL` — truthy sends SMTP mail, otherwise routes to Pushover.
 - `EMAIL_ADDRESS`, `EMAIL_SMTP_SERVER`, `EMAIL_SMTP_PORT` (default 587), `EMAIL_APP_PASSWORD`.
 - `PUSHOVER_USER`, `PUSHOVER_TOKEN`.

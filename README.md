@@ -12,11 +12,14 @@ Built on the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
 ```
 query
   │
-  ├─▶ Clarifier Agent ▶ 2-3 questions back to you ──┐
-  │                                                 │  your answers
-  │   ┌─────────────────────────────────────────────┘
-  │   ▼
-  │  brief = query + clarifications
+  ├─▶ Clarifier Agent ──▶ is this researchable?
+  │                       ├── no  ─▶ stops here, with a reason
+  │                       └── yes ─▶ asks you 2 questions
+  │                                    │
+  │       your answers ◀───────────────┘
+  │            │
+  │            ▼
+  │   brief = query + clarifications
   │
   ├─▶ Planner Agent ──▶ WebSearchPlan (N × {query, reason})
   │
@@ -27,6 +30,10 @@ query
   │
   └─▶ Email Agent   ──▶ HTML email via SMTP, or a Pushover notification
 ```
+
+Requests that cannot be researched — nonsense, greetings, "write me a poem" — stop at the
+clarifier, and the research button never appears. Vague requests are *not* rejected; narrowing
+them is what the questions are for.
 
 Clarification is deliberately a separate step: `ResearchManager.clarify()` returns the questions,
 the UI collects your answers, and `ResearchManager.run()` then drives the remaining four stages.
@@ -60,7 +67,7 @@ uv run imat-researcher --share      # public Gradio link
 uv run python -m imat_researcher    # equivalent to the console script
 ```
 
-Type a question and press Enter. You'll get two or three short questions back — answer what you
+Type a question and press Enter. You'll get two short questions back — answer what you
 can, leave the rest blank — then hit **Start research** and watch the status updates land until the
 report renders.
 

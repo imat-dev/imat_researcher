@@ -198,6 +198,20 @@ body { background: var(--dr-bg, #ffffff); }
 
 #dr-status:empty { display: none !important; }
 
+/* A reason we are not proceeding — visible, but not an alarm. */
+.dr-notice {
+    display: inline-block;
+    background: var(--dr-surface);
+    border-radius: 12px;
+    padding: 0.75rem 1.15rem;
+    font-size: 15px;
+    line-height: 1.4;
+    letter-spacing: -0.016em;
+    color: var(--dr-text);
+    max-width: 34em;
+    animation: dr-rise 0.4s cubic-bezier(0.28, 0.11, 0.32, 1) both;
+}
+
 #dr-clarify {
     background: var(--dr-surface) !important;
     border: none !important;
