@@ -367,8 +367,18 @@ body { background: var(--dr-bg, #ffffff); }
     box-shadow: none !important;
 }
 
-#dr-examples label, #dr-examples .label-wrap, #dr-examples > div > .label-wrap {
+#dr-examples .label,
+#dr-examples label,
+#dr-examples .label-wrap,
+#dr-examples > div > .label-wrap {
     display: none !important;
+}
+
+#dr-examples-wrap {
+    gap: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
 }
 
 #dr-examples table {

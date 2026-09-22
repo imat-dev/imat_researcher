@@ -32,10 +32,11 @@ async def start_clarification(query: str):
     blank_boxes = [gr.update(visible=False, value="") for _ in range(MAX_QUESTIONS)]
 
     def notice(message: str):
-        """Say why we are not proceeding, with the questionnaire left hidden."""
+        """Say why we are not proceeding: questionnaire hidden, examples back on offer."""
         return (
             NOTICE_HTML.format(message=escape(message)),
             gr.update(visible=False),
+            gr.update(visible=True),
             *blank_prompts,
             *blank_boxes,
             [],
@@ -51,6 +52,7 @@ async def start_clarification(query: str):
 
     yield (
         "Working out what to ask you…",
+        gr.update(visible=False),
         gr.update(visible=False),
         *blank_prompts,
         *blank_boxes,
@@ -88,6 +90,7 @@ async def start_clarification(query: str):
             message="No clarification needed — go ahead and research it."
         ),
         gr.update(visible=True),
+        gr.update(visible=False),
         *prompts,
         *boxes,
         [asked.question for asked in questions],
@@ -156,12 +159,20 @@ def build_ui() -> gr.Blocks:
 
         asked_state = gr.State([])
 
-        gr.HTML('<div class="dr-examples-label">Try one</div>')
-        gr.Examples(examples=EXAMPLES, inputs=query_textbox, elem_id="dr-examples")
+        with gr.Column(elem_id="dr-examples-wrap") as examples_panel:
+            gr.HTML('<div class="dr-examples-label">Try one</div>')
+            gr.Examples(examples=EXAMPLES, inputs=query_textbox, elem_id="dr-examples")
 
         report = gr.Markdown(elem_id="dr-report")
 
-        clarify_outputs = [status, clarify_panel, *prompts, *question_boxes, asked_state]
+        clarify_outputs = [
+            status,
+            clarify_panel,
+            examples_panel,
+            *prompts,
+            *question_boxes,
+            asked_state,
+        ]
         clarify_button.click(start_clarification, query_textbox, clarify_outputs)
         query_textbox.submit(start_clarification, query_textbox, clarify_outputs)
 
