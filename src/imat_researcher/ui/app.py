@@ -147,7 +147,12 @@ def build_ui() -> gr.Blocks:
         clarify_button.click(start_clarification, query_textbox, clarify_outputs)
         query_textbox.submit(start_clarification, query_textbox, clarify_outputs)
 
+        # Hide the questionnaire first, then research. The answers are read by
+        # the second step from the (now hidden) boxes, which keep their values.
         research_button.click(
+            lambda: (gr.update(visible=False), ""),
+            outputs=[clarify_panel, status],
+        ).then(
             run_research,
             inputs=[query_textbox, asked_state, *question_boxes],
             outputs=report,
