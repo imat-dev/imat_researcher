@@ -35,7 +35,7 @@ uv sync
 cp .env.example .env   # then fill in OPENAI_API_KEY and your delivery credentials
 ```
 
-`uv sync` installs the dependencies *and* the package itself in editable mode. The code lives under
+`uv sync` installs the dependencies _and_ the package itself in editable mode. The code lives under
 `src/`, so this step is required before anything imports.
 
 ## Usage
@@ -54,17 +54,17 @@ Type a question, press Enter, and watch the status updates land until the report
 
 All settings come from `.env` (see `.env.example`), read once at startup — changes need a restart.
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `OPENAI_API_KEY` | — | **Required.** Used implicitly by the Agents SDK. |
-| `DEFAULT_MODEL_NAME` | `gpt-5.4-mini` | Model for all four agents. |
-| `HOW_MANY_SEARCHES` | `5` | How many searches the planner is asked to produce. |
-| `USE_EMAIL` | `true` | Truthy sends email; anything else falls back to Pushover. |
-| `EMAIL_ADDRESS` | — | Sender *and* recipient — the report is mailed to yourself. |
-| `EMAIL_SMTP_SERVER` | — | SMTP host. |
-| `EMAIL_SMTP_PORT` | `587` | SMTP port (STARTTLS). |
-| `EMAIL_APP_PASSWORD` | — | App password, not your account password. |
-| `PUSHOVER_USER` / `PUSHOVER_TOKEN` | — | Credentials for the push fallback. |
+| Variable                           | Default        | Purpose                                                    |
+| ---------------------------------- | -------------- | ---------------------------------------------------------- |
+| `OPENAI_API_KEY`                   | —              | **Required.** Used implicitly by the Agents SDK.           |
+| `DEFAULT_MODEL_NAME`               | `gpt-5.4-mini` | Model for all four agents.                                 |
+| `HOW_MANY_SEARCHES`                | `5`            | How many searches the planner is asked to produce.         |
+| `USE_EMAIL`                        | `true`         | Truthy sends email; anything else falls back to Pushover.  |
+| `EMAIL_ADDRESS`                    | —              | Sender _and_ recipient — the report is mailed to yourself. |
+| `EMAIL_SMTP_SERVER`                | —              | SMTP host.                                                 |
+| `EMAIL_SMTP_PORT`                  | `587`          | SMTP port (STARTTLS).                                      |
+| `EMAIL_APP_PASSWORD`               | —              | App password, not your account password.                   |
+| `PUSHOVER_USER` / `PUSHOVER_TOKEN` | —              | Credentials for the push fallback.                         |
 
 Set `USE_EMAIL=false` if you'd rather not configure SMTP; you'll get a push notification instead.
 Either channel raises a descriptive error if its credentials are missing.
@@ -82,7 +82,7 @@ src/imat_researcher/
 └── ui/               Gradio front-ends (app.py, simple.py) + styles.py
 ```
 
-Note on naming: the Agents SDK package is *also* called `agents`. The `imat_researcher.agents`
+Note on naming: the Agents SDK package is _also_ called `agents`. The `imat_researcher.agents`
 subpackage is safe because it's nested — never create a top-level `agents/` directory or put `src/`
 itself on `sys.path`, or every `from agents import ...` will resolve here instead of to the SDK.
 
@@ -96,10 +96,12 @@ uv add <package>        # add a dependency
 There are no tests yet. The src-layout is set up so that a `tests/` directory at the repo root
 would import the installed package rather than the source tree.
 
-
 ## Showcase
-###UI
+
+### UI
+
 <img width="991" height="699" alt="image" src="https://github.com/user-attachments/assets/66de3065-a1ed-46a8-bbd9-108bd0fc00e7" />
 
-###Sample Report
+### Sample Report
+
 <img width="582" height="760" alt="image" src="https://github.com/user-attachments/assets/9a76fd58-dfe8-4ced-8743-f0539f14f3a0" />
