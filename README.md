@@ -95,3 +95,11 @@ uv add <package>        # add a dependency
 
 There are no tests yet. The src-layout is set up so that a `tests/` directory at the repo root
 would import the installed package rather than the source tree.
+
+
+## Showcase
+###UI
+<img width="991" height="699" alt="image" src="https://github.com/user-attachments/assets/66de3065-a1ed-46a8-bbd9-108bd0fc00e7" />
+
+###Sample Report
+<img width="582" height="760" alt="image" src="https://github.com/user-attachments/assets/9a76fd58-dfe8-4ced-8743-f0539f14f3a0" />
