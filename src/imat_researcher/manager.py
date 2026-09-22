@@ -1,40 +1,75 @@
-"""Orchestrates the research pipeline: plan -> search -> write -> deliver."""
+"""Orchestrates the research pipeline: clarify -> plan -> search -> write -> deliver."""
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 
 from agents import Runner, gen_trace_id, trace
 
 from imat_researcher.agents import (
+    build_clarifier_agent,
     build_email_agent,
     build_planner_agent,
     build_search_agent,
     build_writer_agent,
 )
-from imat_researcher.models import ReportData, WebSearchItem, WebSearchPlan
+from imat_researcher.models import (
+    ClarificationPlan,
+    ClarifiedAnswer,
+    ReportData,
+    WebSearchItem,
+    WebSearchPlan,
+)
 
 logger = logging.getLogger(__name__)
 
 TRACE_URL = "https://platform.openai.com/traces/trace?trace_id={trace_id}"
 
 
+def build_brief(query: str, answers: Sequence[ClarifiedAnswer] | None = None) -> str:
+    """Fold the user's clarifications into the query the other agents work from."""
+    if not answers:
+        return f"Query: {query}"
+
+    lines = [f"Query: {query}", "", "The user clarified their request as follows:"]
+    lines += [f"- {a.question}\n  {a.answer}" for a in answers]
+    lines += [
+        "",
+        "Treat these clarifications as authoritative; they narrow the request.",
+    ]
+    return "\n".join(lines)
+
+
 class ResearchManager:
     """Runs the pipeline for one query, streaming human-readable status as it goes."""
 
-    async def run(self, query: str) -> AsyncIterator[str]:
+    async def clarify(self, query: str) -> ClarificationPlan:
+        """Ask what needs pinning down before researching. Called before `run()`."""
+        with trace("Clarification trace", trace_id=gen_trace_id()):
+            result = await Runner.run(build_clarifier_agent(), f"Research request: {query}")
+        plan: ClarificationPlan = result.final_output
+        logger.info("Clarifier produced %d question(s)", len(plan.questions))
+        return plan
+
+    async def run(
+        self, query: str, answers: Sequence[ClarifiedAnswer] | None = None
+    ) -> AsyncIterator[str]:
         """Run the deep research process, yielding status updates then the final report."""
+        brief = build_brief(query, answers)
         trace_id = gen_trace_id()
         with trace("Research trace", trace_id=trace_id):
             yield f"Starting research. Trace: {TRACE_URL.format(trace_id=trace_id)}"
 
-            search_plan = await self.plan_searches(query)
+            if answers:
+                yield f"Using your {len(answers)} clarification(s), planning searches..."
+
+            search_plan = await self.plan_searches(brief)
             yield f"Searches planned, starting {len(search_plan.searches)} searches..."
 
             search_results = await self.perform_searches(search_plan)
             yield "Searches complete, writing report..."
 
-            report = await self.write_report(query, search_results)
+            report = await self.write_report(brief, search_results)
             yield "Report written, sending email..."
 
             await self.send_email(report)
@@ -42,9 +77,9 @@ class ResearchManager:
 
             yield report.markdown_report
 
-    async def plan_searches(self, query: str) -> WebSearchPlan:
-        """Plan the searches to perform for the query."""
-        result = await Runner.run(build_planner_agent(), f"Query: {query}")
+    async def plan_searches(self, brief: str) -> WebSearchPlan:
+        """Plan the searches to perform for the brief."""
+        result = await Runner.run(build_planner_agent(), brief)
         return result.final_output
 
     async def perform_searches(self, search_plan: WebSearchPlan) -> list[str]:
@@ -58,9 +93,9 @@ class ResearchManager:
         result = await Runner.run(build_search_agent(), input_message)
         return result.final_output
 
-    async def write_report(self, query: str, search_results: list[str]) -> ReportData:
-        """Write the report for the query."""
-        input_message = f"Original query: {query}\nSummarized search results: {search_results}"
+    async def write_report(self, brief: str, search_results: list[str]) -> ReportData:
+        """Write the report for the brief."""
+        input_message = f"{brief}\n\nSummarized search results: {search_results}"
         result = await Runner.run(build_writer_agent(), input_message)
         return result.final_output
 

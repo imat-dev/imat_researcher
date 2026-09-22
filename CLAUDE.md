@@ -33,8 +33,9 @@ absolute import that reaches the SDK; sibling modules are imported by full path
 
 ## Architecture
 
-A "deep research" pipeline: a query fans out into parallel web searches, the summaries are written
-up as a report, and the report is emailed or pushed.
+A "deep research" pipeline: a clarifier agent puts a few questions to the user, the answers narrow
+the brief, that brief fans out into parallel web searches, the summaries are written up as a
+report, and the report is emailed or pushed.
 
 ```
 src/imat_researcher/
@@ -46,17 +47,26 @@ src/imat_researcher/
 └── ui/               Gradio front-ends (app.py styled, simple.py bare) + styles.py
 ```
 
+**The flow is two-phase, because the clarifier has to wait for the user.** `ResearchManager.clarify()`
+is a separate call the UI makes *first*; `run()` then takes the answers. Keeping clarification out
+of `run()` is what preserves the streaming contract below — do not fold it in.
+
 `ResearchManager.run()` is an **async generator**: each `yield` is a status string that Gradio
 streams straight into the output Markdown box, and the final `yield` is the full report. Anything
 added to the pipeline must keep that contract — yield a human-readable status, not a data
 structure. The whole run is wrapped in `trace("Research trace", trace_id=...)`, and the first
 status line hands the user a `platform.openai.com/traces` link for that trace.
 
-Four single-purpose agents, each built by an `@lru_cache`d factory rather than created at import
+`build_brief()` folds the query and the answers into the single string that both the planner and
+the writer receive. `run(query)` with no answers still works and yields the bare query — that is
+the path `simple.py` uses, which has no clarification step.
+
+Five single-purpose agents, each built by an `@lru_cache`d factory rather than created at import
 time — importing a module must not construct an agent or read config:
 
 | Module | Factory | Shape |
 | --- | --- | --- |
+| [agents/clarifier.py](src/imat_researcher/agents/clarifier.py) | `build_clarifier_agent` | `output_type=ClarificationPlan` — list of `ClarifyingQuestion(question, why)` |
 | [agents/planner.py](src/imat_researcher/agents/planner.py) | `build_planner_agent` | `output_type=WebSearchPlan` — list of `WebSearchItem(query, reason)` |
 | [agents/search.py](src/imat_researcher/agents/search.py) | `build_search_agent` | `WebSearchTool()` with `tool_choice="required"`; returns a <300-word summary |
 | [agents/writer.py](src/imat_researcher/agents/writer.py) | `build_writer_agent` | `output_type=ReportData(short_summary, markdown_report, follow_up_questions)` |
@@ -65,6 +75,11 @@ time — importing a module must not construct an agent or read config:
 Searches run concurrently via `asyncio.gather` over `Runner.run(build_search_agent(), ...)`. The
 Pydantic models in [models.py](src/imat_researcher/models.py) are the contract between stages, so
 changing a field means updating the `ResearchManager` method that consumes it.
+
+Gradio cannot create components dynamically, so [ui/app.py](src/imat_researcher/ui/app.py) keeps a
+fixed pool of `MAX_QUESTIONS` textboxes and reveals only as many as the clarifier returns. Every
+yield from `start_clarification()` must therefore carry exactly one value per wired output
+(`status`, the group, each box, the state) — a mismatched tuple fails at runtime, not import time.
 
 [notifications.py](src/imat_researcher/notifications.py) holds the raw delivery mechanics:
 `send_email()` (SMTP + STARTTLS, sends from and to the same `EMAIL_ADDRESS`) and `push()`
@@ -82,6 +97,8 @@ process and changes require a restart. Read config through `get_settings()` — 
 - `OPENAI_API_KEY` — required; used implicitly by the Agents SDK.
 - `DEFAULT_MODEL_NAME` — model for all four agents (default `gpt-5.4-mini`).
 - `HOW_MANY_SEARCHES` — number of searches the planner is told to produce (default 5).
+- `HOW_MANY_QUESTIONS` — clarifying questions to ask (default 3). The UI shows at most
+  `app.MAX_QUESTIONS` (3) of them; raising this past 3 means extra questions are never displayed.
 - `USE_EMAIL` — truthy sends SMTP mail, otherwise routes to Pushover.
 - `EMAIL_ADDRESS`, `EMAIL_SMTP_SERVER`, `EMAIL_SMTP_PORT` (default 587), `EMAIL_APP_PASSWORD`.
 - `PUSHOVER_USER`, `PUSHOVER_TOKEN`.

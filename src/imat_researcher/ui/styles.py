@@ -7,7 +7,9 @@ EXAMPLES = [
 HEADER_HTML = """
 <div class="dr-hero">
     <p class="dr-eyebrow">Imat Deep Research</p>
-    <h1 class="dr-headline">Ask anything.<br><span class="dr-gradient">Get the whole story.</span></h1>
+    <h1 class="dr-headline">
+        Ask anything.<br><span class="dr-gradient">Get the whole story.</span>
+    </h1>
     <p class="dr-subhead">
         Four agents plan the searches, run them in parallel, and write it all up for you.
     </p>
@@ -179,6 +181,112 @@ body { background: var(--dr-bg, #ffffff); }
     outline: none !important;
     box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.35) !important;
 }
+
+/* ============================================================
+   Clarification panel
+   ============================================================ */
+#dr-status {
+    text-align: center !important;
+    color: var(--dr-muted) !important;
+    font-size: 15px !important;
+    background: transparent !important;
+    border: none !important;
+    margin-top: 1rem !important;
+    min-height: 0 !important;
+}
+
+#dr-status:empty { display: none !important; }
+
+#dr-clarify {
+    background: var(--dr-surface) !important;
+    border: none !important;
+    border-radius: var(--dr-radius) !important;
+    padding: 1.75rem !important;
+    margin-top: 1.5rem !important;
+    box-shadow: none !important;
+    animation: dr-rise 0.5s cubic-bezier(0.28, 0.11, 0.32, 1) both;
+}
+
+.dr-clarify-label {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.011em;
+    color: var(--dr-text);
+    margin-bottom: 1.25rem;
+}
+
+.dr-clarify-label span {
+    display: block;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: -0.016em;
+    color: var(--dr-muted);
+    margin-top: 0.2rem;
+}
+
+#dr-clarify .dr-question,
+#dr-clarify .dr-question > div,
+#dr-clarify .dr-question .block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+#dr-clarify .dr-question { margin-bottom: 1.1rem !important; }
+
+#dr-clarify .dr-question label,
+#dr-clarify .dr-question span[data-testid="block-info"] {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.016em !important;
+    color: var(--dr-text) !important;
+}
+
+#dr-clarify .dr-question span[data-testid="block-info"] {
+    font-weight: 400 !important;
+    color: var(--dr-muted) !important;
+    font-size: 13px !important;
+}
+
+#dr-clarify .dr-question textarea,
+#dr-clarify .dr-question input {
+    background: var(--dr-card) !important;
+    color: var(--dr-text) !important;
+    border: 1px solid var(--dr-line) !important;
+    border-radius: 12px !important;
+    padding: 0.7rem 1rem !important;
+    font-size: 17px !important;
+    font-family: inherit !important;
+    letter-spacing: -0.022em !important;
+    box-shadow: none !important;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
+}
+
+#dr-clarify .dr-question textarea:focus,
+#dr-clarify .dr-question input:focus {
+    outline: none !important;
+    border-color: var(--dr-blue) !important;
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.18) !important;
+}
+
+#dr-go {
+    background: var(--dr-blue) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: var(--dr-pill) !important;
+    font-weight: 400 !important;
+    font-size: 17px !important;
+    letter-spacing: -0.022em !important;
+    min-height: 48px !important;
+    padding: 0.7rem 1.6rem !important;
+    margin-top: 0.5rem !important;
+    box-shadow: none !important;
+    transition: background 0.25s ease, transform 0.15s ease !important;
+}
+
+#dr-go:hover { background: var(--dr-blue-hover) !important; }
+#dr-go:active { transform: scale(0.985) !important; }
 
 /* ============================================================
    Examples

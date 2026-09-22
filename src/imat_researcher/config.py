@@ -1,8 +1,8 @@
 """Process-wide settings, loaded once from the environment."""
 
+import os
 from dataclasses import dataclass
 from functools import lru_cache
-import os
 
 from dotenv import load_dotenv
 
@@ -15,6 +15,7 @@ def _flag(name: str, default: str) -> bool:
 class Settings:
     model_name: str
     how_many_searches: int
+    how_many_questions: int
     use_email: bool
     email_address: str | None
     email_smtp_server: str | None
@@ -39,6 +40,7 @@ def get_settings() -> Settings:
     return Settings(
         model_name=os.getenv("DEFAULT_MODEL_NAME", "gpt-5.4-mini"),
         how_many_searches=int(os.getenv("HOW_MANY_SEARCHES", "5")),
+        how_many_questions=int(os.getenv("HOW_MANY_QUESTIONS", "3")),
         use_email=_flag("USE_EMAIL", "true"),
         email_address=os.getenv("EMAIL_ADDRESS"),
         email_smtp_server=os.getenv("EMAIL_SMTP_SERVER"),

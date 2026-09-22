@@ -1,8 +1,9 @@
 # Imat Deep Research
 
-Multi-agent deep research. You ask a question; four agents plan a set of web searches, run them in
-parallel, synthesize the findings into a long-form report, and deliver it to your inbox — streaming
-progress into a Gradio UI as it goes.
+Multi-agent deep research. You ask a question; a clarifier agent asks you a few questions back, and
+those answers steer the rest of the pipeline — planning a set of web searches, running them in
+parallel, synthesizing the findings into a long-form report, and delivering it to your inbox, with
+progress streamed into a Gradio UI as it goes.
 
 Built on the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/).
 
@@ -10,6 +11,12 @@ Built on the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
 
 ```
 query
+  │
+  ├─▶ Clarifier Agent ▶ 2-3 questions back to you ──┐
+  │                                                 │  your answers
+  │   ┌─────────────────────────────────────────────┘
+  │   ▼
+  │  brief = query + clarifications
   │
   ├─▶ Planner Agent ──▶ WebSearchPlan (N × {query, reason})
   │
@@ -21,7 +28,12 @@ query
   └─▶ Email Agent   ──▶ HTML email via SMTP, or a Pushover notification
 ```
 
-`ResearchManager.run()` drives all four stages. It is an async generator: every stage yields a
+Clarification is deliberately a separate step: `ResearchManager.clarify()` returns the questions,
+the UI collects your answers, and `ResearchManager.run()` then drives the remaining four stages.
+Answer only the questions you care about — blanks are dropped, and skipping all of them researches
+the bare query.
+
+`ResearchManager.run()` is an async generator: every stage yields a
 status line that streams straight into the UI, and the last yield is the finished report. The whole
 run is wrapped in a single trace, and the first status line gives you a
 `platform.openai.com/traces` link to inspect it.
@@ -48,7 +60,12 @@ uv run imat-researcher --share      # public Gradio link
 uv run python -m imat_researcher    # equivalent to the console script
 ```
 
-Type a question, press Enter, and watch the status updates land until the report renders.
+Type a question and press Enter. You'll get two or three short questions back — answer what you
+can, leave the rest blank — then hit **Start research** and watch the status updates land until the
+report renders.
+
+The `--simple` interface skips clarification entirely and researches the bare query, which is handy
+when you're debugging the pipeline itself.
 
 ## Configuration
 
