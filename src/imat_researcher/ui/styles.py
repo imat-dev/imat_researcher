@@ -51,11 +51,11 @@ CSS = """
 body.dark .gradio-container,
 html.dark .gradio-container {
     --dr-bg: #000000;
-    --dr-surface: #1d1d1f;
-    --dr-card: #1d1d1f;
+    --dr-surface: #1c1c1e;
+    --dr-card: #2c2c2e;
     --dr-text: #f5f5f7;
-    --dr-muted: #86868b;
-    --dr-line: #424245;
+    --dr-muted: #98989d;
+    --dr-line: #38383a;
     --dr-blue: #0071e3;
     --dr-blue-hover: #0077ed;
     --dr-link: #2997ff;
@@ -189,9 +189,10 @@ body { background: var(--dr-bg, #ffffff); }
     text-align: center !important;
     color: var(--dr-muted) !important;
     font-size: 15px !important;
+    letter-spacing: -0.016em !important;
     background: transparent !important;
     border: none !important;
-    margin-top: 1rem !important;
+    margin-top: 1.1rem !important;
     min-height: 0 !important;
 }
 
@@ -201,73 +202,112 @@ body { background: var(--dr-bg, #ffffff); }
     background: var(--dr-surface) !important;
     border: none !important;
     border-radius: var(--dr-radius) !important;
-    padding: 1.75rem !important;
-    margin-top: 1.5rem !important;
+    padding: 2rem 2rem 1.75rem !important;
+    margin-top: 1.75rem !important;
+    gap: 0 !important;
     box-shadow: none !important;
     animation: dr-rise 0.5s cubic-bezier(0.28, 0.11, 0.32, 1) both;
 }
 
-.dr-clarify-label {
-    font-size: 21px;
+.dr-clarify-head { margin-bottom: 1.75rem; }
+
+.dr-clarify-head h2 {
+    font-size: 24px;
     font-weight: 600;
-    letter-spacing: -0.011em;
+    line-height: 1.16;
+    letter-spacing: -0.012em;
     color: var(--dr-text);
-    margin-bottom: 1.25rem;
+    margin: 0;
 }
 
-.dr-clarify-label span {
-    display: block;
-    font-size: 14px;
+.dr-clarify-head p {
+    font-size: 15px;
     font-weight: 400;
     letter-spacing: -0.016em;
     color: var(--dr-muted);
-    margin-top: 0.2rem;
+    margin: 0.3rem 0 0;
 }
 
-#dr-clarify .dr-question,
-#dr-clarify .dr-question > div,
-#dr-clarify .dr-question .block {
+/* Each question slot: prompt markup + its answer field */
+#dr-clarify .dr-qitem {
+    gap: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    min-width: 0 !important;
+}
+
+#dr-clarify .dr-qitem:not(:has(.dr-q)) { display: none !important; }
+
+.dr-q { margin: 0 0 0.55rem; }
+
+/* The question leads. */
+.dr-q-text {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.022em;
+    color: var(--dr-text);
+    margin: 0;
+}
+
+/* Its rationale is secondary, and must never outweigh the question. */
+.dr-q-why {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: -0.016em;
+    color: var(--dr-muted);
+    margin: 0.2rem 0 0;
+}
+
+#dr-clarify .dr-answer,
+#dr-clarify .dr-answer > div,
+#dr-clarify .dr-answer .block,
+#dr-clarify .dr-answer .wrap {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
 }
 
-#dr-clarify .dr-question { margin-bottom: 1.1rem !important; }
+#dr-clarify .dr-answer { margin: 0 0 1.5rem !important; }
+#dr-clarify .dr-qitem:last-of-type .dr-answer { margin-bottom: 0.5rem !important; }
 
-#dr-clarify .dr-question label,
-#dr-clarify .dr-question span[data-testid="block-info"] {
-    font-size: 15px !important;
-    font-weight: 500 !important;
-    letter-spacing: -0.016em !important;
-    color: var(--dr-text) !important;
-}
-
-#dr-clarify .dr-question span[data-testid="block-info"] {
-    font-weight: 400 !important;
-    color: var(--dr-muted) !important;
-    font-size: 13px !important;
-}
-
-#dr-clarify .dr-question textarea,
-#dr-clarify .dr-question input {
+#dr-clarify .dr-answer textarea,
+#dr-clarify .dr-answer input {
     background: var(--dr-card) !important;
     color: var(--dr-text) !important;
-    border: 1px solid var(--dr-line) !important;
+    border: 1px solid transparent !important;
     border-radius: 12px !important;
-    padding: 0.7rem 1rem !important;
+    padding: 0.65rem 0.95rem !important;
     font-size: 17px !important;
     font-family: inherit !important;
     letter-spacing: -0.022em !important;
+    line-height: 1.4 !important;
+    min-height: 44px !important;
     box-shadow: none !important;
+    resize: none !important;
     transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
 }
 
-#dr-clarify .dr-question textarea:focus,
-#dr-clarify .dr-question input:focus {
+#dr-clarify .dr-answer textarea::placeholder,
+#dr-clarify .dr-answer input::placeholder {
+    color: var(--dr-muted) !important;
+    opacity: 0.7 !important;
+}
+
+#dr-clarify .dr-answer textarea:focus,
+#dr-clarify .dr-answer input:focus {
     outline: none !important;
     border-color: var(--dr-blue) !important;
     box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.18) !important;
+}
+
+/* Compact CTA — Apple never stretches a primary button edge to edge on desktop. */
+.dr-actions {
+    margin-top: 1.25rem !important;
+    gap: 0 !important;
 }
 
 #dr-go {
@@ -278,15 +318,21 @@ body { background: var(--dr-bg, #ffffff); }
     font-weight: 400 !important;
     font-size: 17px !important;
     letter-spacing: -0.022em !important;
-    min-height: 48px !important;
-    padding: 0.7rem 1.6rem !important;
-    margin-top: 0.5rem !important;
+    min-height: 46px !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    align-self: flex-start !important;
+    padding: 0.6rem 1.7rem !important;
     box-shadow: none !important;
     transition: background 0.25s ease, transform 0.15s ease !important;
 }
 
 #dr-go:hover { background: var(--dr-blue-hover) !important; }
 #dr-go:active { transform: scale(0.985) !important; }
+#dr-go:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.35) !important;
+}
 
 /* ============================================================
    Examples
@@ -483,6 +529,8 @@ footer { display: none !important; }
     .gradio-container { padding: 2.5rem 1.25rem 4rem !important; }
     .dr-query-row { flex-direction: column !important; }
     #dr-run { width: 100% !important; }
+    #dr-clarify { padding: 1.5rem 1.25rem 1.25rem !important; }
+    #dr-go { width: 100% !important; align-self: stretch !important; }
     .dr-subhead { font-size: 19px; }
 }
 """

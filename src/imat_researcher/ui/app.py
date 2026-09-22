@@ -1,6 +1,7 @@
 """The styled Gradio interface: ask, clarify, then research."""
 
 from collections.abc import AsyncIterator
+from html import escape
 
 import gradio as gr
 
@@ -9,35 +10,70 @@ from imat_researcher.models import ClarifiedAnswer
 from imat_researcher.ui.styles import CSS, EXAMPLES, HEADER_HTML, JS
 
 # Gradio needs its components declared up front, so we keep a fixed pool of
-# question boxes and reveal only as many as the clarifier actually asks for.
+# question slots and reveal only as many as the clarifier actually asks for.
 MAX_QUESTIONS = 3
+
+# The question and its rationale are rendered as our own markup rather than as
+# Gradio's label/info, so the typography is ours to control.
+QUESTION_HTML = """
+<div class="dr-q">
+    <p class="dr-q-text">{question}</p>
+    <p class="dr-q-why">{why}</p>
+</div>
+"""
 
 
 async def start_clarification(query: str):
     """Phase one: ask the clarifier what it needs to know, and show those questions."""
     query = (query or "").strip()
-    hidden = [gr.update(visible=False, value="") for _ in range(MAX_QUESTIONS)]
+    blank_prompts = [gr.update(visible=False, value="") for _ in range(MAX_QUESTIONS)]
+    blank_boxes = [gr.update(visible=False, value="") for _ in range(MAX_QUESTIONS)]
 
     if not query:
-        yield ("Enter a research question to get started.", gr.update(visible=False), *hidden, [])
+        yield (
+            "Enter a research question to get started.",
+            gr.update(visible=False),
+            *blank_prompts,
+            *blank_boxes,
+            [],
+        )
         return
 
-    yield ("Working out what to ask you…", gr.update(visible=False), *hidden, [])
+    yield (
+        "Working out what to ask you…",
+        gr.update(visible=False),
+        *blank_prompts,
+        *blank_boxes,
+        [],
+    )
 
     plan = await ResearchManager().clarify(query)
     questions = plan.questions[:MAX_QUESTIONS]
 
-    boxes = []
+    prompts, boxes = [], []
     for index in range(MAX_QUESTIONS):
         if index < len(questions):
             asked = questions[index]
-            boxes.append(
-                gr.update(visible=True, value="", label=asked.question, info=asked.why)
+            prompts.append(
+                gr.update(
+                    visible=True,
+                    value=QUESTION_HTML.format(
+                        question=escape(asked.question), why=escape(asked.why)
+                    ),
+                )
             )
+            boxes.append(gr.update(visible=True, value=""))
         else:
+            prompts.append(gr.update(visible=False, value=""))
             boxes.append(gr.update(visible=False, value=""))
 
-    yield ("", gr.update(visible=True), *boxes, [asked.question for asked in questions])
+    yield (
+        "",
+        gr.update(visible=True),
+        *prompts,
+        *boxes,
+        [asked.question for asked in questions],
+    )
 
 
 async def run_research(query: str, questions: list[str], *answers: str) -> AsyncIterator[str]:
@@ -71,18 +107,34 @@ def build_ui() -> gr.Blocks:
 
         status = gr.Markdown("", elem_id="dr-status")
 
-        with gr.Group(visible=False, elem_id="dr-clarify") as clarify_group:
+        with gr.Column(visible=False, elem_id="dr-clarify") as clarify_panel:
             gr.HTML(
-                '<div class="dr-clarify-label">A few questions first '
-                '<span>Answer what you can &mdash; blanks are fine</span></div>'
+                '<div class="dr-clarify-head">'
+                "<h2>A few questions first</h2>"
+                "<p>Answer what you can &mdash; blanks are fine.</p>"
+                "</div>"
             )
-            question_boxes = [
-                gr.Textbox(visible=False, lines=1, elem_classes="dr-question")
-                for _ in range(MAX_QUESTIONS)
-            ]
-            research_button = gr.Button(
-                "Start research", variant="primary", elem_id="dr-go"
-            )
+
+            prompts, question_boxes = [], []
+            for _ in range(MAX_QUESTIONS):
+                with gr.Column(elem_classes="dr-qitem"):
+                    prompts.append(gr.HTML(visible=False))
+                    question_boxes.append(
+                        gr.Textbox(
+                            visible=False,
+                            show_label=False,
+                            container=False,
+                            lines=1,
+                            max_lines=3,
+                            placeholder="Your answer",
+                            elem_classes="dr-answer",
+                        )
+                    )
+
+            with gr.Row(elem_classes="dr-actions"):
+                research_button = gr.Button(
+                    "Start research", variant="primary", elem_id="dr-go"
+                )
 
         asked_state = gr.State([])
 
@@ -91,7 +143,7 @@ def build_ui() -> gr.Blocks:
 
         report = gr.Markdown(elem_id="dr-report")
 
-        clarify_outputs = [status, clarify_group, *question_boxes, asked_state]
+        clarify_outputs = [status, clarify_panel, *prompts, *question_boxes, asked_state]
         clarify_button.click(start_clarification, query_textbox, clarify_outputs)
         query_textbox.submit(start_clarification, query_textbox, clarify_outputs)
 
